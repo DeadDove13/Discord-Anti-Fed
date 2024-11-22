@@ -35,40 +35,42 @@ function Log-Action {
     param (
         [string]$Message
     )
-    $logFilePath = "$($env:USERPROFILE)\Desktop\ScriptLog.txt"
+    # Define the folder path for logs in AppData
+    $appDataPath = [System.Environment]::GetFolderPath('ApplicationData')
+    $logFolderPath = [System.IO.Path]::Combine($appDataPath, "ScriptLogs")
+    $logFilePath = [System.IO.Path]::Combine($logFolderPath, "Anti-Fed Log.txt")
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Add-Content -Path $logFilePath -Value "$timestamp - $Message"
-}
 
-# Function to check and close Discord
-function Ensure-DiscordClosed {
-    $discordProcess = Get-Process -Name "Discord" -ErrorAction SilentlyContinue
-    if ($discordProcess) {
-        Write-Host "Discord is currently running." -ForegroundColor Yellow
-        do {
-            $choice = Read-Host "Press 1 to force close Discord, or 0 to close it manually"
-            
-            if ($choice -eq "1") {
-                Stop-Process -Name "Discord" -Force -ErrorAction SilentlyContinue
-                Start-Sleep -Seconds 3
-                Write-Host "Discord has been force-closed." -ForegroundColor $PassColour
-                Log-Action "Discord process was force-closed."
-                break
-            }
-            elseif ($choice -eq "0") {
-                Write-Host "Please close Discord manually and rerun the script." -ForegroundColor $ErrorColour
-                Log-Action "User chose to manually close Discord."
-                Read-Host -Prompt $ExitMessage
-                Exit
-            }
-            else {
-                Write-Host "B R U H!!! Invalid input. Please try again." -ForegroundColor $ErrorColour
-            }
-        } while ($true)
+    try {
+        # Create the log folder if it does not exist
+        if (-Not (Test-Path -Path $logFolderPath)) {
+            New-Item -Path $logFolderPath -ItemType Directory -Force | Out-Null  # Suppress output
+        }
+        
+        # Check if the log file exists; if not, create it
+        if (-Not (Test-Path -Path $logFilePath)) {
+            New-Item -Path $logFilePath -ItemType File -Force | Out-Null  # Suppress output
+        }
+        
+        # Write the log message with timestamp
+        Add-Content -Path $logFilePath -Value "$timestamp - $Message"
     }
-    else {
-        Write-Host "Discord is not running. Proceeding with cache cleanup." -ForegroundColor $PassColour
+    catch {
+        Write-Host "Error while logging: $_" -ForegroundColor $ErrorColour
     }
+    Tidy-Output
+}
+# Tidy up the output
+function Tidy-Output {
+    Write-Host ""
+    Write-Host "===============================================" -ForegroundColor Cyan
+    Write-Host "            Script Logs Summary              " -ForegroundColor Cyan
+    Write-Host "===============================================" -ForegroundColor Cyan
+    Write-Host "Log folder created at: C:\Users\$env:USERNAME\AppData\Roaming\ScriptLogs" -ForegroundColor Green
+    Write-Host "Log file created at: C:\Users\$env:USERNAME\AppData\Roaming\ScriptLogs\Anti-Fed Log.txt" -ForegroundColor Green
+    Write-Host "Log entry added: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") - DNS cache flushed successfully." -ForegroundColor Green
+    Write-Host "===============================================" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 # Function to flush DNS cache
