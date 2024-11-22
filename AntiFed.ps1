@@ -1,5 +1,3 @@
-
-
 #########################################################################################################################################################################################
 # This script is designed to perform multiple actions related to network and system cleanup. It includes the following functionalities:                                                 #
 # Logic Cycle:                                                                                                                                                                          #
@@ -13,13 +11,13 @@
 #   3. Renew IP Config: Changes the MAC address, releases the current IP address, and requests a new one.                                                                               #
 #       - Temporarily changes the MAC address of the active network adapter, releases the current IP, and requests a new one, potentially changing the IP address.                      #
 #   4. All Actions: Executes all three actions in sequence.                                                                                                                             #
+#   5. Clear Discord Chat Logs: Clears the local storage data Discord uses to cache conversations, ensuring no local traces of private conversations are left.                           #
 #   9. View Logs: Displays a summary of logged actions and opens the log file.                                                                                                          #
 #   0. Exit: Ends the script and logs the action.                                                                                                             ######################### #
 # - Each action is logged, with success and error messages shown in color-coded outputs to enhance readability.                                               ###     DeadDove13    ### #
 #########################################################################################################################################################################################
-                                                                                                                                            
+
 # Define color codes and exit message
-# This dictionary stores color codes for different types of messages to make output more readable
 $colors = @{
     Error = "Red"
     Pass = "Green"
@@ -30,13 +28,11 @@ $colors = @{
 $ExitMessage = "Press Enter to exit"
 
 # Define the folder path for logs in AppData
-# Set up the paths for logging - these will store logs in the user's Application Data directory
 $appDataPath = [System.Environment]::GetFolderPath('ApplicationData')
 $logFolderPath = [System.IO.Path]::Combine($appDataPath, "ScriptLogs")
 $logFilePath = [System.IO.Path]::Combine($logFolderPath, "Anti-Fed Log.txt")
 
 # ASCII Art and GitHub Information
-# ASCII art and GitHub link for script branding
 $asciiArt = @"
     ____  _                          __   ___          __  _       ______         __
    / __ \(_)_____________  _________/ /  /   |  ____  / /_(_)     / ____/__  ____/ /
@@ -52,7 +48,6 @@ Write-Host $githubText -ForegroundColor White
 Write-Host "This script removes cache files from Discord and flushes your DNS if someone sends you some nasty shit." -ForegroundColor $colors.Description
 
 # Helper function to create the log folder and file if they do not exist
-# Ensures the log folder and file are created if they don't already exist
 function Ensure-LogFileExists {
     if (-Not (Test-Path -Path $logFolderPath)) {
         New-Item -Path $logFolderPath -ItemType Directory -Force | Out-Null
@@ -63,7 +58,6 @@ function Ensure-LogFileExists {
 }
 
 # Function to log actions to a file
-# Logs any actions performed by the script to a log file for later review
 function Log-Action {
     param (
         [string]$Message
@@ -79,7 +73,6 @@ function Log-Action {
 }
 
 # Function to handle logging and status messages
-# Writes messages to the console with appropriate color and logs them
 function Write-Message {
     param (
         [string]$Message,
@@ -90,7 +83,6 @@ function Write-Message {
 }
 
 # Function to ensure Discord is closed
-# Checks if Discord is running and closes it if it is, to prevent issues with cache clearing
 function Ensure-DiscordClosed {
     $discordProcess = Get-Process -Name discord -ErrorAction SilentlyContinue
     if ($discordProcess) {
@@ -103,7 +95,6 @@ function Ensure-DiscordClosed {
 }
 
 # Function to flush DNS cache
-# Flushes the DNS cache to remove any unwanted DNS entries
 function Flush-DNS {
     try {
         Write-Message "Flushing the DNS cache..." $colors.Info
@@ -116,7 +107,6 @@ function Flush-DNS {
 }
 
 # Function to change MAC address temporarily
-# Generates a random MAC address and assigns it to the specified network adapter
 function Change-MACAddress {
     param (
         [Parameter(Mandatory = $true)]
@@ -142,7 +132,6 @@ function Change-MACAddress {
 }
 
 # Function to disable and enable network adapter to force IP change
-# Disables and re-enables the network adapter to apply changes like a new MAC address
 function Toggle-NetworkAdapter {
     param (
         [Parameter(Mandatory = $true)]
@@ -163,7 +152,6 @@ function Toggle-NetworkAdapter {
 }
 
 # Function to get the active network adapter
-# Retrieves the active network adapter to perform network-related actions
 function Get-ActiveAdapter {
     try {
         Write-Message "Searching for an active network adapter..." $colors.Info
@@ -184,7 +172,6 @@ function Get-ActiveAdapter {
 }
 
 # Function to renew IP configuration
-# Changes the MAC address, releases the current IP, and requests a new IP configuration
 function Renew-IPConfig {
     $adapter = Get-ActiveAdapter
     if (-not $adapter) {
@@ -217,7 +204,6 @@ function Renew-IPConfig {
 }
 
 # Function to clear Discord cache
-# Clears the cache files for Discord to remove any unwanted data
 function Clear-DiscordCache {
     Ensure-DiscordClosed
     $roamingPath = [System.IO.Path]::Combine($appDataPath, "discord", "Cache", "Cache_Data")
@@ -251,8 +237,41 @@ function Clear-DiscordCache {
     }
 }
 
+# Function to clear Discord chat logs
+function Clear-DiscordChatLogs {
+    Ensure-DiscordClosed
+    $localStoragePath = [System.IO.Path]::Combine($appDataPath, "discord", "Local Storage")
+    if (-Not (Test-Path -Path $localStoragePath)) {
+        Write-Message "The Discord Local Storage folder does not exist at: $localStoragePath" $colors.Error
+        return
+    }
+    try {
+        $chatLogFiles = Get-ChildItem -Path $localStoragePath -Recurse
+        if ($chatLogFiles.Count -eq 0) {
+            Write-Message "No chat log files found to delete." $colors.Info
+        }
+        else {
+            foreach ($file in $chatLogFiles) {
+                try {
+                    if ($file.PSIsContainer -eq $false) {
+                        $file.Attributes = 'Normal'
+                        Remove-Item -Path $file.FullName -Force -Recurse
+                        Write-Message "Deleted chat log: $($file.FullName)" $colors.Pass
+                    }
+                }
+                catch {
+                    Write-Message "Failed to delete chat log: $($file.FullName) - $_" $colors.Error
+                }
+            }
+        }
+        Write-Message "Successfully cleared the Discord Local Storage folder." $colors.Pass
+    }
+    catch {
+        Write-Message "An error occurred while processing the folder: $_" $colors.Error
+    }
+}
+
 # Function to display logs summary
-# Displays a summary of the logs and opens the log file for the user to view
 function Tidy-Output {
     Write-Host ""
     Write-Host "===============================================" -ForegroundColor Cyan
@@ -274,10 +293,14 @@ function Tidy-Output {
 }
 
 # Main user input loop
-# Provides options for the user to choose which action to take
-# Options include clearing Discord cache, flushing DNS, renewing IP configuration, viewing logs, or exiting
 do {
-    $choice = Read-Host "Press 1 to clear Discord cache, 2 to flush DNS, 3 to renew IP config, 4 for all actions, 9 for logs or 0 to close"
+write-Host "Press 1 to clear Discord cache, 2 to flush DNS, 3 to renew IP config, 4 for all actions,"
+write-Host "5 to clear chat logs" -ForegroundColor White -NoNewline
+write-Host " (THIS WILL LOG YOU OUT AND NUKE YOUR SETTINGS)" -ForegroundColor Red -NoNewline
+write-Host ", 9 for logs or 0 to close"
+
+$choice = Read-Host "What do you wanna do champ?"
+
     switch ($choice) {
         "1" { Clear-DiscordCache }
         "2" { Flush-DNS }
@@ -287,6 +310,7 @@ do {
             Flush-DNS
             Renew-IPConfig
         }
+        "5" { Clear-DiscordChatLogs }
         "9" { Tidy-Output }
         "0" {
             Write-Message "Exiting the script." $colors.Exit
