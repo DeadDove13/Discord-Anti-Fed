@@ -58,8 +58,8 @@ function Log-Action {
     catch {
         Write-Host "Error while logging: $_" -ForegroundColor $ErrorColour
     }
-    Tidy-Output
 }
+
 # Tidy up the output
 function Tidy-Output {
     Write-Host ""
@@ -71,6 +71,18 @@ function Tidy-Output {
     Write-Host "Log entry added: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") - DNS cache flushed successfully." -ForegroundColor Green
     Write-Host "===============================================" -ForegroundColor Cyan
     Write-Host ""
+}
+
+# Function to ensure Discord is closed
+function Ensure-DiscordClosed {
+    $discordProcess = Get-Process -Name discord -ErrorAction SilentlyContinue
+    if ($discordProcess) {
+        Write-Host "Closing Discord..." -ForegroundColor $InfoColour
+        Stop-Process -Name discord -Force
+    }
+    else {
+        Write-Host "Discord is not running." -ForegroundColor Yellow
+    }
 }
 
 # Function to flush DNS cache
@@ -145,7 +157,7 @@ function Clear-DiscordCache {
 
 # Main user input loop
 do {
-    $choice = Read-Host "Press 1 to clear Discord cache, 2 to flush DNS, 3 to renew IP config, 4 for all actions, or 0 to close"
+    $choice = Read-Host "Press 1 to clear Discord cache, 2 to flush DNS, 3 to renew IP config, 4 for all actions, 9 for logs or 0 to close"
     if ($choice -eq "1") {
         Clear-DiscordCache
     }
@@ -159,6 +171,9 @@ do {
         Clear-DiscordCache
         Flush-DNS
         Renew-IPConfig
+    }
+    elseif ($choice -eq "9") {
+        Tidy-Output
     }
     elseif ($choice -eq "0") {
         Write-Host "Exiting the script." -ForegroundColor White
