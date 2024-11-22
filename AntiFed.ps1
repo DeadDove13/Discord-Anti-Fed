@@ -4,6 +4,13 @@ $PassColour = "Green"
 $InfoColour = "Yellow"
 $ExitMessage = "Press Enter to exit"
 
+# Define the folder path for logs in AppData
+$appDataPath = [System.Environment]::GetFolderPath('ApplicationData')
+$logFolderPath = [System.IO.Path]::Combine($appDataPath, "ScriptLogs")
+$logFilePath = [System.IO.Path]::Combine($logFolderPath, "Anti-Fed Log.txt")
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+
 # ASCII Art and GitHub Information
 $asciiArt = @"
   _____  _                       _                  _   _        ______ ______ _____  
@@ -35,12 +42,6 @@ function Log-Action {
     param (
         [string]$Message
     )
-    # Define the folder path for logs in AppData
-    $appDataPath = [System.Environment]::GetFolderPath('ApplicationData')
-    $logFolderPath = [System.IO.Path]::Combine($appDataPath, "ScriptLogs")
-    $logFilePath = [System.IO.Path]::Combine($logFolderPath, "Anti-Fed Log.txt")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-
     try {
         # Create the log folder if it does not exist
         if (-Not (Test-Path -Path $logFolderPath)) {
@@ -60,7 +61,7 @@ function Log-Action {
     }
 }
 
-# Tidy up the output
+# Tidy up the output and open the log file
 function Tidy-Output {
     Write-Host ""
     Write-Host "===============================================" -ForegroundColor Cyan
@@ -68,7 +69,15 @@ function Tidy-Output {
     Write-Host "===============================================" -ForegroundColor Cyan
     Write-Host "Log folder created at: C:\Users\$env:USERNAME\AppData\Roaming\ScriptLogs" -ForegroundColor Green
     Write-Host "Log file created at: C:\Users\$env:USERNAME\AppData\Roaming\ScriptLogs\Anti-Fed Log.txt" -ForegroundColor Green
-    Write-Host "Log entry added: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") - DNS cache flushed successfully." -ForegroundColor Green
+
+    if (Test-Path -Path $logFilePath) {
+        Write-Host "Opening log file..." -ForegroundColor $InfoColour
+        Invoke-Item -Path $logFilePath  # Open the log file
+    }
+    else {
+        Write-Host "Log file not found. No logs available to display." -ForegroundColor $ErrorColour
+    }
+
     Write-Host "===============================================" -ForegroundColor Cyan
     Write-Host ""
 }
