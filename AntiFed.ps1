@@ -87,17 +87,97 @@ function Flush-DNS {
     }
 }
 
+# Function to disable and enable network adapter to force IP change
+function Toggle-NetworkAdapter {
+    param (
+        [Parameter(Mandatory = $true)]
+        [Microsoft.Management.Infrastructure.CimInstance]$Adapter
+    )
+    try {
+        Write-Message "Disabling network adapter: $($Adapter.Name)" $colors.Info
+        Disable-NetAdapter -Name $Adapter.Name -Confirm:$false -ErrorAction Stop
+        Start-Sleep -Seconds 5
+
+        Write-Message "Enabling network adapter: $($Adapter.Name)" $colors.Info
+        Enable-NetAdapter -Name $Adapter.Name -Confirm:$false -ErrorAction Stop
+        Start-Sleep -Seconds 5
+    }
+    catch {
+        Write-Message "Failed to disable/enable network adapter: $_" $colors.Error
+    }
+}
+
+# Function to change MAC address temporarily
+function Change-MACAddress {
+    param (
+        [Parameter(Mandatory = $true)]
+        [Microsoft.Management.Infrastructure.CimInstance]$Adapter
+    )
+    try {
+        $newMac = "02" + ((Get-Random -Minimum 0 -Maximum 255).ToString("X2")) + ((Get-Random -Minimum 0 -Maximum 255).ToString("X2")) + ((Get-Random -Minimum 0 -Maximum 255).ToString("X2"))
+        Write-Message "Changing MAC address of adapter: $($Adapter.Name) to $newMac" $colors.Info
+
+        # Set new MAC address in the registry
+        $adapterKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}\"
+        $adapterConfig = Get-NetAdapter | Where-Object { $_.Name -eq $Adapter.Name }
+        $regPath = ($adapterKey + ($adapterConfig.InterfaceIndex.ToString("D4"))).TrimEnd()
+        Set-ItemProperty -Path $regPath -Name "NetworkAddress" -Value $newMac
+
+        Toggle-NetworkAdapter -Adapter $Adapter
+    }
+    catch {
+        Write-Message "Failed to change MAC address: $_" $colors.Error
+    }
+}
+
 # Function to renew IP configuration
 function Renew-IPConfig {
+    $adapter = Get-ActiveAdapter
+    if (-not $adapter) {
+        Write-Message "Cannot proceed with IP renewal without an active network adapter." $colors.Error
+        return
+    }
+    
+    Change-MACAddress -Adapter $adapter
+
     try {
         Write-Message "Releasing current IP configuration..." $colors.Info
         ipconfig /release | Out-Null
+        Start-Sleep -Seconds 5
+
         Write-Message "Requesting a new IP configuration..." $colors.Info
         ipconfig /renew | Out-Null
-        Write-Message "Successfully renewed IP configuration." $colors.Pass
+        Start-Sleep -Seconds 5
+
+        $newIP = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notlike 'Loopback' -and $_.IPAddress -notmatch '^169\.254' -and $_.IPAddress -notmatch '^127' }).IPAddress
+        if (-not $newIP) {
+            Write-Message "No valid internal IP address found." $colors.Error
+        } else {
+            Write-Message "Successfully renewed IP configuration. New IP address: $newIP" $colors.Pass
+        }
     }
     catch {
-        Write-Message "Failed to renew IP configuration: $_" $colors.Error
+        Write-Message "An unexpected error occurred during IP renewal: $_" $colors.Error
+    }
+}
+
+# Function to get the active network adapter
+function Get-ActiveAdapter {
+    try {
+        Write-Message "Searching for an active network adapter..." $colors.Info
+        $adapter = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.InterfaceDescription -notlike '*Virtual*' -and $_.InterfaceDescription -notlike '*Loopback*' }
+        
+        if (-not $adapter) {
+            Write-Message "No active network adapter found." $colors.Error
+            return $null
+        } else {
+            Write-Message "Active network adapter found: $($adapter.Name)" $colors.Info
+            return $adapter
+        }
+    }
+    catch {
+        Write-Message "Failed to get active network adapter: $_" $colors.Error
+        return $null
     }
 }
 
