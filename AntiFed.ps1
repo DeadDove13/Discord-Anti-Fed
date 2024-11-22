@@ -1,6 +1,7 @@
 # Define color codes
 $ErrorColour = "Red"
 $PassColour = "Green"
+$InfoColour = "Yellow"
 $ExitMessage = "Press Enter to exit"
 
 # ASCII Art and GitHub Information
@@ -29,97 +30,157 @@ Perfect for clearing up space or handling any unwanted chaos in your connection 
 
 Write-Host $description -ForegroundColor Yellow
 
-# Function to check and close Discord
+# Function to log actions to a file
+function Log-Action {
+    param (
+        [string]$Message
+    )
+    # Define the folder path for logs in AppData
+    $appDataPath = [System.Environment]::GetFolderPath('ApplicationData')
+    $logFolderPath = [System.IO.Path]::Combine($appDataPath, "ScriptLogs")
+    $logFilePath = [System.IO.Path]::Combine($logFolderPath, "Anti-Fed Log.txt")
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+    try {
+        # Create the log folder if it does not exist
+        if (-Not (Test-Path -Path $logFolderPath)) {
+            New-Item -Path $logFolderPath -ItemType Directory -Force | Out-Null  # Suppress output
+        }
+        
+        # Check if the log file exists; if not, create it
+        if (-Not (Test-Path -Path $logFilePath)) {
+            New-Item -Path $logFilePath -ItemType File -Force | Out-Null  # Suppress output
+        }
+        
+        # Write the log message with timestamp
+        Add-Content -Path $logFilePath -Value "$timestamp - $Message"
+    }
+    catch {
+        Write-Host "Error while logging: $_" -ForegroundColor $ErrorColour
+    }
+}
+
+# Tidy up the output
+function Tidy-Output {
+    Write-Host ""
+    Write-Host "===============================================" -ForegroundColor Cyan
+    Write-Host "            Script Logs Summary              " -ForegroundColor Cyan
+    Write-Host "===============================================" -ForegroundColor Cyan
+    Write-Host "Log folder created at: C:\Users\$env:USERNAME\AppData\Roaming\ScriptLogs" -ForegroundColor Green
+    Write-Host "Log file created at: C:\Users\$env:USERNAME\AppData\Roaming\ScriptLogs\Anti-Fed Log.txt" -ForegroundColor Green
+    Write-Host "Log entry added: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") - DNS cache flushed successfully." -ForegroundColor Green
+    Write-Host "===============================================" -ForegroundColor Cyan
+    Write-Host ""
+}
+
+# Function to ensure Discord is closed
 function Ensure-DiscordClosed {
-    $discordProcess = Get-Process -Name "Discord" -ErrorAction SilentlyContinue
+    $discordProcess = Get-Process -Name discord -ErrorAction SilentlyContinue
     if ($discordProcess) {
-        Write-Host "Discord is currently running." -ForegroundColor Yellow
-        do {
-            $choice = Read-Host "Press 1 to force close Discord, or 0 to close it manually"
-            
-            if ($choice -eq "1") {
-                Stop-Process -Name "Discord" -Force -ErrorAction SilentlyContinue
-                Start-Sleep -Seconds 3
-                Write-Host "Discord has been force-closed." -ForegroundColor $PassColour
-                break
-            } elseif ($choice -eq "0") {
-                Write-Host "Please close Discord manually and rerun the script." -ForegroundColor $ErrorColour
-                Read-Host -Prompt $ExitMessage
-                Exit
-            } else {
-                Write-Host "B R U H!!! Invalid input. Please try again." -ForegroundColor $ErrorColour
-            }
-        } while ($true)
-    } else {
-        Write-Host "Discord is not running. Proceeding with cache cleanup." -ForegroundColor $PassColour
+        Write-Host "Closing Discord..." -ForegroundColor $InfoColour
+        Stop-Process -Name discord -Force
+    }
+    else {
+        Write-Host "Discord is not running." -ForegroundColor Yellow
     }
 }
 
 # Function to flush DNS cache
 function Flush-DNS {
     try {
-        Write-Host "Flushing the DNS cache..." -ForegroundColor Yellow
+        Write-Host "Flushing the DNS cache..." -ForegroundColor $InfoColour
         ipconfig /flushdns | Out-Null
         Write-Host "Successfully flushed the DNS cache." -ForegroundColor $PassColour
-    } catch {
+        Log-Action "DNS cache flushed successfully."
+    }
+    catch {
         Write-Host "Failed to flush the DNS cache: $_" -ForegroundColor $ErrorColour
+        Log-Action "Error flushing DNS cache: $_"
+    }
+}
+
+# Function to renew IP configuration
+function Renew-IPConfig {
+    try {
+        Write-Host "Releasing current IP configuration..." -ForegroundColor $InfoColour
+        ipconfig /release | Out-Null
+        Write-Host "Requesting a new IP configuration..." -ForegroundColor $InfoColour
+        ipconfig /renew | Out-Null
+        Write-Host "Successfully renewed IP configuration." -ForegroundColor $PassColour
+        Log-Action "IP configuration renewed successfully."
+    }
+    catch {
+        Write-Host "Failed to renew IP configuration: $_" -ForegroundColor $ErrorColour
+        Log-Action "Error renewing IP configuration: $_"
     }
 }
 
 # Function to clear Discord cache
 function Clear-DiscordCache {
-    # Ensure Discord is closed before continuing
     Ensure-DiscordClosed
-
-    # Find the path to the user's AppData\Roaming\discord\Cache\Cache_Data folder
     $roamingPath = [System.IO.Path]::Combine([System.Environment]::GetFolderPath('ApplicationData'), "discord", "Cache", "Cache_Data")
-    
-    # Validate the folder exists
     if (-Not (Test-Path -Path $roamingPath)) {
         Write-Host "The Discord Cache_Data folder does not exist at: $roamingPath" -ForegroundColor $ErrorColour
+        Log-Action "Cache_Data folder not found at: $roamingPath"
         return
     }
-
-    # Delete the contents of the Cache_Data folder
     try {
         $cacheFiles = Get-ChildItem -Path $roamingPath -Recurse
         if ($cacheFiles.Count -eq 0) {
             Write-Host "No cache files found to delete." -ForegroundColor Yellow
-        } else {
+            Log-Action "No cache files found in Cache_Data folder."
+        }
+        else {
             foreach ($file in $cacheFiles) {
                 try {
-                    # Only attempt to remove attributes if the item is a file
                     if ($file.PSIsContainer -eq $false) {
-                        # Remove read-only attribute if present
                         $file.Attributes = 'Normal'
                         Remove-Item -Path $file.FullName -Force -Recurse
                         Write-Host "Deleted: $($file.FullName)" -ForegroundColor $PassColour
+                        Log-Action "Deleted cache file: $($file.FullName)"
                     }
-                } catch {
+                }
+                catch {
                     Write-Host "Failed to delete: $($file.FullName) - $_" -ForegroundColor $ErrorColour
+                    Log-Action "Failed to delete cache file: $($file.FullName) - $_"
                 }
             }
         }
         Write-Host "Successfully cleared the Discord Cache_Data folder." -ForegroundColor $PassColour
-    } catch {
+        Log-Action "Discord Cache_Data folder cleared successfully."
+    }
+    catch {
         Write-Host "An error occurred while processing the folder: $_" -ForegroundColor $ErrorColour
+        Log-Action "Error clearing Cache_Data folder: $_"
     }
 }
 
-# User input loop to run the script or exit
+# Main user input loop
 do {
-    $choice = Read-Host "Press 1 to clear Discord cache, 2 to clear cache and flush DNS, or 0 to close"
-
-    # Execute based on user's choice
+    $choice = Read-Host "Press 1 to clear Discord cache, 2 to flush DNS, 3 to renew IP config, 4 for all actions, 9 for logs or 0 to close"
     if ($choice -eq "1") {
         Clear-DiscordCache
-    } elseif ($choice -eq "2") {
+    }
+    elseif ($choice -eq "2") {
+        Flush-DNS
+    }
+    elseif ($choice -eq "3") {
+        Renew-IPConfig
+    }
+    elseif ($choice -eq "4") {
         Clear-DiscordCache
         Flush-DNS
-    } elseif ($choice -eq "0") {
+        Renew-IPConfig
+    }
+    elseif ($choice -eq "9") {
+        Tidy-Output
+    }
+    elseif ($choice -eq "0") {
         Write-Host "Exiting the script." -ForegroundColor White
+        Log-Action "Script exited by user."
         Exit
-    } else {
+    }
+    else {
         Write-Host "B R U H!!! Invalid input. Please try again." -ForegroundColor $ErrorColour
     }
 } while ($true)
