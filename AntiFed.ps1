@@ -294,8 +294,8 @@ function Tidy-Output {
 
 # Main user input loop
 do {
-write-Host "Press 1 to clear Discord cache, 2 to flush DNS, 3 to renew IP config, 4 for all actions,"
-write-Host "5 to clear chat logs" -ForegroundColor White -NoNewline
+write-Host "Press 1 to clear Discord cache, 2 to flush DNS, 3 to renew IP config, 4 for all of the above,"
+write-Host "5 to purge your account" -ForegroundColor White -NoNewline
 write-Host " (THIS WILL LOG YOU OUT AND NUKE YOUR SETTINGS)" -ForegroundColor Red -NoNewline
 write-Host ", 9 for logs or 0 to close"
 
