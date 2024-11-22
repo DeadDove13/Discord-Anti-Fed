@@ -13,12 +13,13 @@ $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
 # ASCII Art and GitHub Information
 $asciiArt = @"
-  _____  _                       _                  _   _        ______ ______ _____  
- |  __ \(_)                     | |     /\         | | (_)      |  ____|  ____|  __ \ 
- | |  | |_ ___  ___ ___  _ __ __| |    /  \   _ __ | |_ _ ______| |__  | |__  | |  | |
- | |  | | / __|/ __/ _ \| '__/ _` |   / /\ \ | '_ \| __| |______|  __| |  __| | |  | |
- | |__| | \__ \ (_| (_) | | | (_| |  / ____ \| | | | |_| |      | |    | |____| |__| |
- |_____/|_|___/\___\___/|_|  \__,_| /_/    \_\_| |_|\__|_|      |_|    |______|_____/ 
+
+    ____  _                          __   ___          __  _       ______         __
+   / __ \(_)_____________  _________/ /  /   |  ____  / /_(_)     / ____/__  ____/ /
+  / / / / / ___/ ___/ __ \/ ___/ __  /  / /| | / __ \/ __/ /_____/ /_  / _ \/ __  / 
+ / /_/ / (__  ) /__/ /_/ / /  / /_/ /  / ___ |/ / / / /_/ /_____/ __/ /  __/ /_/ /  
+/_____/_/____/\___/\____/_/   \__,_/  /_/  |_/_/ /_/\__/_/     /_/    \___/\__,_/   
+                                                                                    
 "@
 
 $githubText = @"
@@ -26,7 +27,7 @@ $githubText = @"
 "@
 
 # Display ASCII art and GitHub information
-Write-Host $asciiArt -ForegroundColor Blue
+Write-Host $asciiArt -ForegroundColor DarkGreen
 Write-Host $githubText -ForegroundColor White
 
 # Description of the script
