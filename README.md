@@ -37,7 +37,8 @@ This PowerShell script is designed to manage Discord cache files and network set
 3. **Flushes DNS**: Executes `ipconfig /flushdns` to clear the DNS resolver cache, resolving potential connection issues.
 4. **Renews IP Address**: Executes `ipconfig /release` and `ipconfig /renew` to request a new IP configuration from your network.
 5. **Changes MAC Address**: Generates a new random MAC address and assigns it to the active network adapter, followed by disabling and re-enabling the adapter to apply the new MAC address. This can help in bypassing certain network restrictions or privacy measures.
-6. **Logs Actions**: All actions, including successes and errors, are logged in a file located in `AppData\Roaming\ScriptLogs`.
+6. **Nuke**: Deletes all of your message history as well as your local account data.
+7. **Logs Actions**: All actions, including successes and errors, are logged in a file located in `AppData\Roaming\ScriptLogs`.
 
 ---
 
@@ -50,6 +51,7 @@ This PowerShell script is designed to manage Discord cache files and network set
    - Press `2` to flush the DNS cache.
    - Press `3` to renew your IP configuration.
    - Press `4` to perform all actions sequentially.
+   - Press `5` to NUKE your local account.
    - Press `9` to view log summaries.
    - Press `0` to exit the script.
 
