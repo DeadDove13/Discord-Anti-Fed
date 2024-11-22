@@ -11,7 +11,7 @@
 #   3. Renew IP Config: Changes the MAC address, releases the current IP address, and requests a new one.                                                                               #
 #       - Temporarily changes the MAC address of the active network adapter, releases the current IP, and requests a new one, potentially changing the IP address.                      #
 #   4. All Actions: Executes all three actions in sequence.                                                                                                                             #
-#   5. Clear Discord Chat Logs: Clears the local storage data Discord uses to cache conversations, ensuring no local traces of private conversations are left.                           #
+#   5. Clear Discord Chat Logs: Clears the local storage data Discord uses to cache conversations, ensuring no local traces of private conversations are left.                          #
 #   9. View Logs: Displays a summary of logged actions and opens the log file.                                                                                                          #
 #   0. Exit: Ends the script and logs the action.                                                                                                             ######################### #
 # - Each action is logged, with success and error messages shown in color-coded outputs to enhance readability.                                               ###     DeadDove13    ### #
@@ -314,7 +314,7 @@ $choice = Read-Host "What do you wanna do champ?"
         "9" { Tidy-Output }
         "0" {
             Write-Message "Exiting the script." $colors.Exit
-            break
+            exit
         }
         default { Write-Host "B R U H!!! Invalid input. Please try again." -ForegroundColor $colors.Error }
     }
