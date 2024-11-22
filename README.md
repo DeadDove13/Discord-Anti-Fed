@@ -1,4 +1,10 @@
-# Discord Cache Cleaner and DNS Flusher
+```ansi
+    ____  _                          __   ___          __  _       ______         __
+   / __ \(_)_____________  _________/ /  /   |  ____  / /_(_)     / ____/__  ____/ /
+  / / / / / ___/ ___/ __ \/ ___/ __  /  / /| | / __ \/ __/ /_____/ /_  / _ \/ __  / 
+ / /_/ / (__  ) /__/ /_/ / /  / /_/ /  / ___ |/ / / / /_/ /_____/ __/ /  __/ /_/ /  
+/_____/_/____/\___/\____/_/   \__,_/  /_/  |_/_/ /_/\__/_/     /_/    \___/\__,_/   
+```
 
 This PowerShell script is designed to manage Discord cache files and network settings efficiently. It provides tools for clearing Discord's cache, flushing your DNS, and renewing your IP configuration, making it ideal for troubleshooting, freeing up space, or resolving network issues.
 
