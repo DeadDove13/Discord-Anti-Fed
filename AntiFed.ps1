@@ -87,26 +87,6 @@ function Flush-DNS {
     }
 }
 
-# Function to disable and enable network adapter to force IP change
-function Toggle-NetworkAdapter {
-    param (
-        [Parameter(Mandatory = $true)]
-        [Microsoft.Management.Infrastructure.CimInstance]$Adapter
-    )
-    try {
-        Write-Message "Disabling network adapter: $($Adapter.Name)" $colors.Info
-        Disable-NetAdapter -Name $Adapter.Name -Confirm:$false -ErrorAction Stop
-        Start-Sleep -Seconds 5
-
-        Write-Message "Enabling network adapter: $($Adapter.Name)" $colors.Info
-        Enable-NetAdapter -Name $Adapter.Name -Confirm:$false -ErrorAction Stop
-        Start-Sleep -Seconds 5
-    }
-    catch {
-        Write-Message "Failed to disable/enable network adapter: $_" $colors.Error
-    }
-}
-
 # Function to change MAC address temporarily
 function Change-MACAddress {
     param (
@@ -127,6 +107,46 @@ function Change-MACAddress {
     }
     catch {
         Write-Message "Failed to change MAC address: $_" $colors.Error
+    }
+}
+
+# Function to disable and enable network adapter to force IP change
+function Toggle-NetworkAdapter {
+    param (
+        [Parameter(Mandatory = $true)]
+        [Microsoft.Management.Infrastructure.CimInstance]$Adapter
+    )
+    try {
+        Write-Message "Disabling network adapter: $($Adapter.Name)" $colors.Info
+        Disable-NetAdapter -Name $Adapter.Name -Confirm:$false -ErrorAction Stop
+        Start-Sleep -Seconds 5
+
+        Write-Message "Enabling network adapter: $($Adapter.Name)" $colors.Info
+        Enable-NetAdapter -Name $Adapter.Name -Confirm:$false -ErrorAction Stop
+        Start-Sleep -Seconds 5
+    }
+    catch {
+        Write-Message "Failed to disable/enable network adapter: $_" $colors.Error
+    }
+}
+
+# Function to get the active network adapter
+function Get-ActiveAdapter {
+    try {
+        Write-Message "Searching for an active network adapter..." $colors.Info
+        $adapter = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.InterfaceDescription -notlike '*Virtual*' -and $_.InterfaceDescription -notlike '*Loopback*' }
+        
+        if (-not $adapter) {
+            Write-Message "No active network adapter found." $colors.Error
+            return $null
+        } else {
+            Write-Message "Active network adapter found: $($adapter.Name)" $colors.Info
+            return $adapter
+        }
+    }
+    catch {
+        Write-Message "Failed to get active network adapter: $_" $colors.Error
+        return $null
     }
 }
 
@@ -158,26 +178,6 @@ function Renew-IPConfig {
     }
     catch {
         Write-Message "An unexpected error occurred during IP renewal: $_" $colors.Error
-    }
-}
-
-# Function to get the active network adapter
-function Get-ActiveAdapter {
-    try {
-        Write-Message "Searching for an active network adapter..." $colors.Info
-        $adapter = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.InterfaceDescription -notlike '*Virtual*' -and $_.InterfaceDescription -notlike '*Loopback*' }
-        
-        if (-not $adapter) {
-            Write-Message "No active network adapter found." $colors.Error
-            return $null
-        } else {
-            Write-Message "Active network adapter found: $($adapter.Name)" $colors.Info
-            return $adapter
-        }
-    }
-    catch {
-        Write-Message "Failed to get active network adapter: $_" $colors.Error
-        return $null
     }
 }
 
